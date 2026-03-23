@@ -6,7 +6,6 @@ const excelJS = require('exceljs');
 const userModel = require('../schemas/users');
 const roleModel = require('../schemas/roles');
 const cartModel = require('../schemas/cart');
-const mongoose = require('mongoose');
 const { sendCredentials } = require('../utils/sendMailHandler');
 const { cellToString } = require('../utils/excelCellValue');
 const { checkLogin, checkRole } = require('../utils/authHandler');
@@ -65,30 +64,21 @@ router.post("/import-users", checkLogin, checkRole("ADMIN"),
       const plainPassword = generatePassword(16);
 
       try {
-        let session = await mongoose.startSession();
-        session.startTransaction();
-        try {
-          let newUser = new userModel({
-            username: username,
-            password: plainPassword,
-            email: email,
-            role: userRole._id
-          });
-          await newUser.save({ session });
+        // Không dùng transaction: MongoDB standalone không hỗ trợ transaction
+        let newUser = new userModel({
+          username: username,
+          password: plainPassword,
+          email: email,
+          role: userRole._id
+        });
+        await newUser.save();
 
-          let newCart = new cartModel({ user: newUser._id });
-          await newCart.save({ session });
+        let newCart = new cartModel({ user: newUser._id });
+        await newCart.save();
 
-          await sendCredentials(email, username, plainPassword);
+        await sendCredentials(email, username, plainPassword);
 
-          await session.commitTransaction();
-          success.push({ username, email });
-        } catch (err) {
-          await session.abortTransaction();
-          failed.push({ username, email, error: err.message });
-        } finally {
-          session.endSession();
-        }
+        success.push({ username, email });
       } catch (err) {
         failed.push({ username, email, error: err.message });
       }

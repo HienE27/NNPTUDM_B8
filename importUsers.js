@@ -92,36 +92,28 @@ async function main() {
     // Sinh mật khẩu ngẫu nhiên 16 ký tự
     const plainPassword = generatePassword(16);
 
-    let session;
+    // Không dùng transaction: MongoDB standalone (Docker mặc định) không hỗ trợ transaction
     try {
-      session = await mongoose.startSession();
-      await session.withTransaction(async () => {
-        // Tạo user (pre-save hook sẽ tự hash password)
-        let newUser = new userModel({
-          username: username,
-          password: plainPassword,
-          email: email,
-          role: userRole._id
-        });
-        await newUser.save({ session });
-
-        // Tạo cart cho user
-        let newCart = new cartModel({ user: newUser._id });
-        await newCart.save({ session });
-
-        // Gửi email chứa mật khẩu
-        await sendCredentials(email, username, plainPassword);
-
-        results.push({ username, email, success: true });
-        successCount++;
-        console.log(`[OK] Tạo user thành công: ${username} (${email})`);
+      let newUser = new userModel({
+        username: username,
+        password: plainPassword,
+        email: email,
+        role: userRole._id
       });
+      await newUser.save();
+
+      let newCart = new cartModel({ user: newUser._id });
+      await newCart.save();
+
+      await sendCredentials(email, username, plainPassword);
+
+      results.push({ username, email, success: true });
+      successCount++;
+      console.log(`[OK] Tạo user thành công: ${username} (${email})`);
     } catch (err) {
       results.push({ username, email, success: false, error: err.message });
       errorCount++;
       console.error(`[FAIL] Tạo user thất bại: ${username} - ${err.message}`);
-    } finally {
-      if (session) await session.endSession();
     }
   }
 
