@@ -18,6 +18,7 @@ const userModel = require('./schemas/users');
 const roleModel = require('./schemas/roles');
 const cartModel = require('./schemas/cart');
 const { sendCredentials } = require('./utils/sendMailHandler');
+const { cellToString } = require('./utils/excelCellValue');
 
 // Kết nối MongoDB
 mongoose.connect('mongodb://localhost:27017/NNPTUD-C2');
@@ -68,8 +69,8 @@ async function main() {
 
   for (let index = 2; index <= worksheet.rowCount; index++) {
     const row = worksheet.getRow(index);
-    let username = row.getCell(1).value;
-    let email = row.getCell(2).value;
+    let username = cellToString(row.getCell(1).value);
+    let email = cellToString(row.getCell(2).value);
 
     if (!username || !email) {
       results.push({ username: username || '(trống)', email: email || '(trống)', success: false, error: 'Username hoặc email bị trống' });

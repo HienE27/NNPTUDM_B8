@@ -8,6 +8,7 @@ const roleModel = require('../schemas/roles');
 const cartModel = require('../schemas/cart');
 const mongoose = require('mongoose');
 const { sendCredentials } = require('../utils/sendMailHandler');
+const { cellToString } = require('../utils/excelCellValue');
 const { checkLogin, checkRole } = require('../utils/authHandler');
 
 function generatePassword(length = 16) {
@@ -44,8 +45,8 @@ router.post("/import-users", checkLogin, checkRole("ADMIN"),
 
     for (let index = 2; index <= worksheet.rowCount; index++) {
       const row = worksheet.getRow(index);
-      let username = row.getCell(1).value;
-      let email = row.getCell(2).value;
+      let username = cellToString(row.getCell(1).value);
+      let email = cellToString(row.getCell(2).value);
 
       if (!username || !email) {
         failed.push({ username: username || '(trong)', email: email || '(trong)', error: 'Username hoac email bi trong' });
